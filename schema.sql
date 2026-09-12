@@ -26,3 +26,22 @@ create policy "anon update config"  on public.config  for update to anon using (
 alter publication supabase_realtime add table public.entries, public.config;
 
 insert into public.config (id, data) values ('exchange', '{}'::jsonb) on conflict (id) do nothing;
+
+-- Reset for the exchange controls. Runs with owner rights so the anon key can clear
+-- the board without holding a delete policy; gated on the same key as the admin panel.
+create or replace function public.reset_exchange(key text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if key is distinct from 'centreleftdads' then
+    raise exception 'wrong key';
+  end if;
+  delete from public.entries where id is not null;
+  update public.config set data = '{}'::jsonb where id = 'exchange';
+end
+$$;
+revoke all on function public.reset_exchange(text) from public;
+grant execute on function public.reset_exchange(text) to anon;

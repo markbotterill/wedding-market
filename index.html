@@ -1091,6 +1091,26 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
       panel.appendChild(row);
     });
 
+    var reset = el("div", "admin-row");
+    reset.appendChild(el("span", "an",
+      "Reset wipes every trader and position and clears the date, closing times and results. Use it after testing, before guests arrive."));
+    var rz = el("button", "btn-ghost", "Reset exchange");
+    rz.type = "button";
+    rz.onclick = async function () {
+      if (!db) { toast("Offline — not reset"); return; }
+      if (!window.confirm("Wipe every trader, position and result? This cannot be undone.")) return;
+      try {
+        var r = await db.rpc("reset_exchange", { key: ADMIN_KEY });
+        if (r.error) throw r.error;
+        me.picks = {}; ls("iswx-picks", "{}");
+        applyConfig({});
+        await refresh();
+        toast("Exchange reset");
+      } catch (e) { toast("Reset failed"); }
+    };
+    reset.appendChild(rz);
+    panel.appendChild(reset);
+
     var out = el("div", "admin-row");
     var hide = el("button", "btn-ghost", "Close controls");
     hide.type = "button";
